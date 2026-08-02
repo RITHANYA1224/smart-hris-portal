@@ -8,6 +8,9 @@ dist/
 build/
 bin/
 out/
+target/
+*.class
+
 
 # Logs
 npm-debug.log*
