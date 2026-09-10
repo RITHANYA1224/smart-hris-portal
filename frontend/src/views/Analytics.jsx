@@ -208,6 +208,41 @@ const Analytics = () => {
         </div>
 
       </section>
+
+      {/* Single Balanced Summary Section */}
+      <section className="dashboard-grid-2-1">
+        
+        {/* Recruitment & Hiring Efficiency */}
+        <div className="card pastel-card-1" style={{ padding: '1.25rem' }}>
+          <div className="card-title" style={{ color: '#2e1065', marginBottom: '0.85rem' }}>Hiring Efficiency Metrics</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', textAlign: 'center' }}>
+            <div style={{ padding: '0.75rem', backgroundColor: 'rgba(255, 255, 255, 0.7)', borderRadius: '10px' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6b21a8' }}>Time-to-Hire</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#3b0764', marginTop: '0.2rem' }}>22 Days</div>
+            </div>
+            <div style={{ padding: '0.75rem', backgroundColor: 'rgba(255, 255, 255, 0.7)', borderRadius: '10px' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#9d174d' }}>Cost-per-Hire</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#831843', marginTop: '0.2rem' }}>₹42,000</div>
+            </div>
+            <div style={{ padding: '0.75rem', backgroundColor: 'rgba(255, 255, 255, 0.7)', borderRadius: '10px' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#86198f' }}>Acceptance Rate</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#701a75', marginTop: '0.2rem' }}>88%</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Key HR Observations */}
+        <div className="card pastel-card-2" style={{ padding: '1.25rem' }}>
+          <div className="card-title" style={{ color: '#831843', marginBottom: '0.85rem' }}>Key Workforce Insights</div>
+          <ul style={{ margin: 0, paddingLeft: '1.1rem', fontSize: '0.825rem', color: '#9d174d', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontWeight: 600 }}>
+            <li>Retention increased by 14% following recent quarterly reviews.</li>
+            <li>Engineering & HR departments achieved peak performance index scores.</li>
+            <li>Turnover risk remains low with 94% overall survey response rate.</li>
+          </ul>
+        </div>
+
+      </section>
+
     </div>
   );
 };
