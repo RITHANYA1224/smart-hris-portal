@@ -8,28 +8,39 @@ import com.examly.springapp.exception.ResourceNotFoundException;
 import com.examly.springapp.model.Department;
 import com.examly.springapp.model.Employee;
 import com.examly.springapp.model.User;
-import com.examly.springapp.repository.DepartmentRepository;
-import com.examly.springapp.repository.EmployeeRepository;
-import com.examly.springapp.repository.UserRepository;
+import com.examly.springapp.repository.*;
 import com.examly.springapp.service.EmployeeService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
+    private final LeaveApplicationRepository leaveApplicationRepository;
+    private final PayrollRepository payrollRepository;
+    private final AppraisalRepository appraisalRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
-    public EmployeeServiceImpl(EmployeeRepository employeeRepository, DepartmentRepository departmentRepository, UserRepository userRepository) {
+    public EmployeeServiceImpl(EmployeeRepository employeeRepository, 
+                               DepartmentRepository departmentRepository, 
+                               UserRepository userRepository,
+                               LeaveApplicationRepository leaveApplicationRepository,
+                               PayrollRepository payrollRepository,
+                               AppraisalRepository appraisalRepository,
+                               org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
         this.employeeRepository = employeeRepository;
         this.departmentRepository = departmentRepository;
         this.userRepository = userRepository;
+        this.leaveApplicationRepository = leaveApplicationRepository;
+        this.payrollRepository = payrollRepository;
+        this.appraisalRepository = appraisalRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     private void validateEmployeeData(EmployeeDTO dto, boolean isCreate, Long existingId) {
@@ -84,6 +95,29 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (dto.getUserId() != null) {
             user = userRepository.findById(dto.getUserId())
                     .orElse(null);
+        }
+
+        if (user == null && dto.getEmail() != null) {
+            final String empEmail = dto.getEmail().trim().toLowerCase();
+            user = userRepository.findByEmailIgnoreCase(empEmail).orElseGet(() -> {
+                com.examly.springapp.model.Role userRole = com.examly.springapp.model.Role.EMPLOYEE;
+                if (dto.getDesignation() != null) {
+                    String dLower = dto.getDesignation().toLowerCase();
+                    if (dLower.contains("manager")) userRole = com.examly.springapp.model.Role.MANAGER;
+                    else if (dLower.contains("hr")) userRole = com.examly.springapp.model.Role.HR_BP;
+                    else if (dLower.contains("finance")) userRole = com.examly.springapp.model.Role.FINANCE_OFFICER;
+                }
+                User newUser = User.builder()
+                        .name(dto.getName() != null ? dto.getName().trim() : "Employee User")
+                        .phoneNumber(dto.getPhoneNumber() != null ? dto.getPhoneNumber().replaceAll("[^0-9]", "") : "9876543210")
+                        .email(empEmail)
+                        .passwordHash(passwordEncoder.encode("Password@123"))
+                        .role(userRole)
+                        .isActive(true)
+                        .createdDate(java.time.LocalDateTime.now())
+                        .build();
+                return userRepository.save(newUser);
+            });
         }
 
         Employee employee = Employee.builder()
@@ -165,12 +199,27 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    @Transactional
     public void deleteEmployee(Long id) {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
+
+        // Delete dependent records first to satisfy FK constraints
+        leaveApplicationRepository.deleteAll(leaveApplicationRepository.findByEmployeeId(id));
+        payrollRepository.deleteAll(payrollRepository.findByEmployeeId(id));
+        appraisalRepository.deleteAll(appraisalRepository.findByEmployeeId(id));
+
+        // Disassociate manager self-references
+        List<Employee> subordinates = employeeRepository.findAll().stream()
+                .filter(e -> e.getManager() != null && e.getManager().getId().equals(id))
+                .collect(Collectors.toList());
+        for (Employee sub : subordinates) {
+            sub.setManager(null);
+            employeeRepository.save(sub);
+        }
+
         employeeRepository.delete(employee);
     }
-
 
     private EmployeeDTO mapToDTO(Employee emp) {
         return EmployeeDTO.builder()

@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class LeaveServiceImpl implements LeaveService {
 
     private final LeaveApplicationRepository leaveApplicationRepository;

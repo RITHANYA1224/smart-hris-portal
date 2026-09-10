@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -19,8 +18,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserProfile(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User profile not found for email: " + email));
+        if (email == null || email.trim().isEmpty()) {
+            throw new ResourceNotFoundException("Email is required to fetch profile");
+        }
+        String cleanEmail = email.trim();
+        return userRepository.findByEmailIgnoreCase(cleanEmail)
+                .or(() -> userRepository.findByEmail(cleanEmail))
+                .orElseThrow(() -> new ResourceNotFoundException("User profile not found for email: " + cleanEmail));
     }
 
     @Override

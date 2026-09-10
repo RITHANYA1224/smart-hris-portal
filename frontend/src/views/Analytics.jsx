@@ -18,39 +18,39 @@ const Analytics = () => {
 
       {/* KPI statistics cards */}
       <section className="kpi-grid">
-        <div className="card kpi-card">
-          <div className="kpi-icon bg-blue">⏳</div>
+        <div className="card kpi-card pastel-card-1">
+          <div className="kpi-icon pastel-icon-lavender">⏳</div>
           <div>
             <div className="kpi-value">2.8 yrs</div>
             <div className="kpi-label">Avg Tenure</div>
-            <div className="kpi-change up">▲ +0.3 vs last period</div>
+            <div className="kpi-change up" style={{ color: '#7e22ce' }}>▲ +0.3 vs last period</div>
           </div>
         </div>
 
-        <div className="card kpi-card">
-          <div className="kpi-icon bg-orange">📉</div>
+        <div className="card kpi-card pastel-card-2">
+          <div className="kpi-icon pastel-icon-pink">📉</div>
           <div>
             <div className="kpi-value">3.1%</div>
             <div className="kpi-label">Attrition Rate</div>
-            <div className="kpi-change down">▼ -0.8% vs last period</div>
+            <div className="kpi-change down" style={{ color: '#be185d' }}>▼ -0.8% vs last period</div>
           </div>
         </div>
 
-        <div className="card kpi-card">
-          <div className="kpi-icon bg-green">📈</div>
+        <div className="card kpi-card pastel-card-3">
+          <div className="kpi-icon pastel-icon-lilac">📈</div>
           <div>
             <div className="kpi-value">8.4%</div>
             <div className="kpi-label">Hire Rate</div>
-            <div className="kpi-change up">▲ +1.2% vs last period</div>
+            <div className="kpi-change up" style={{ color: '#86198f' }}>▲ +1.2% vs last period</div>
           </div>
         </div>
 
-        <div className="card kpi-card">
-          <div className="kpi-icon bg-purple">⚡</div>
+        <div className="card kpi-card pastel-card-4">
+          <div className="kpi-icon pastel-icon-blush">⚡</div>
           <div>
             <div className="kpi-value">87/100</div>
             <div className="kpi-label">Eng. Score</div>
-            <div className="kpi-change up">▲ +5 vs last period</div>
+            <div className="kpi-change up" style={{ color: '#9f1239' }}>▲ +5 vs last period</div>
           </div>
         </div>
       </section>

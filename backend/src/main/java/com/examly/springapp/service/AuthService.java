@@ -8,4 +8,5 @@ public interface AuthService {
     AuthResponse register(RegisterRequest request);
     AuthResponse login(AuthRequest request);
     void logout(String token);
+    boolean isEmailAvailable(String email);
 }

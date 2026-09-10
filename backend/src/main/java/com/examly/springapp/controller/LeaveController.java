@@ -13,7 +13,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/leaves")
-@RequiredArgsConstructor
 @Tag(name = "Leave Management", description = "Submit, view pending, approve, and manage leave applications")
 public class LeaveController {
 

@@ -31,6 +31,8 @@ public class RegisterRequest {
     @NotNull(message = "Role is required")
     private Role role;
 
+    private String designation;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -45,4 +47,7 @@ public class RegisterRequest {
 
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
+
+    public String getDesignation() { return designation; }
+    public void setDesignation(String designation) { this.designation = designation; }
 }

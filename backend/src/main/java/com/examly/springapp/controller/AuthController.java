@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@RequiredArgsConstructor
 @Tag(name = "Authentication", description = "User registration, login, and session management")
 public class AuthController {
 
@@ -38,6 +37,13 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/check-email")
+    @Operation(summary = "Check email availability", description = "Checks whether an email address is available for registration")
+    public ResponseEntity<java.util.Map<String, Boolean>> checkEmail(@RequestParam("email") String email) {
+        boolean available = authService.isEmailAvailable(email);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("available", available));
     }
 
     @PostMapping("/logout")

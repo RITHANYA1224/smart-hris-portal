@@ -13,7 +13,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/employees")
-@RequiredArgsConstructor
 @Tag(name = "Employee Management", description = "CRUD operations, org chart, search, and lifecycle management for employees")
 public class EmployeeController {
 

@@ -43,14 +43,21 @@ const Register = () => {
 
     const delayDebounceFn = setTimeout(async () => {
       try {
-        const response = await fetch(`http://localhost:8080/api/auth/check-email?email=${encodeURIComponent(formData.email)}`);
-        const data = await response.json();
-        if (!data.available) {
-          setEmailError('This email is already registered');
-          setEmailChecked(false);
-        } else {
-          setEmailError('');
-          setEmailChecked(true);
+        let response;
+        try {
+          response = await fetch(`/api/auth/check-email?email=${encodeURIComponent(formData.email)}`);
+        } catch (e) {
+          response = await fetch(`http://localhost:8080/api/auth/check-email?email=${encodeURIComponent(formData.email)}`);
+        }
+        if (response && response.ok) {
+          const data = await response.json();
+          if (!data.available) {
+            setEmailError('This email is already registered');
+            setEmailChecked(false);
+          } else {
+            setEmailError('');
+            setEmailChecked(true);
+          }
         }
       } catch (err) {
         console.error('Email verification error:', err);
@@ -74,7 +81,8 @@ const Register = () => {
       setError("Name must not contain numbers or special characters");
       return;
     }
-    if (!phoneRegex.test(formData.phoneNumber)) {
+    const cleanP = formData.phoneNumber.replace(/[^0-9]/g, '');
+    if (cleanP.length !== 10) {
       setError("Phone Number must be exactly 10 digits long");
       return;
     }
@@ -95,18 +103,38 @@ const Register = () => {
     setLoading(true);
     setError('');
 
+    const payload = {
+      name: formData.name.trim(),
+      phoneNumber: formData.phoneNumber.replace(/[^0-9]/g, ''),
+      email: formData.email.trim().toLowerCase(),
+      password: formData.password.trim(),
+      role: (formData.role || 'EMPLOYEE').toUpperCase().replace(/\s+/g, '_'),
+      designation: formData.designation ? formData.designation.trim() : 'Software Engineer'
+    };
+
     try {
-      const response = await fetch('http://localhost:8080/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
+      let response;
+      try {
+        response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+      } catch (proxyErr) {
+        response = await fetch('http://localhost:8080/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+      }
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (response && response.ok) {
         setSuccess(true);
       } else {
         setError(data.message || "Registration failed. Please check form constraints.");
@@ -124,7 +152,7 @@ const Register = () => {
         <div className="card" style={{ width: '100%', maxWidth: '500px', textAlign: 'center' }}>
           <span style={{ fontSize: '4rem' }}>🎉</span>
           <h2 style={{ margin: '1.5rem 0 1.0rem 0' }}>Registration successful!</h2>
-          <p style={{ marginBottom: '2rem' }}>Please verify your email to activate your account and log in.</p>
+          <p style={{ marginBottom: '2rem' }}>Your profile has been created and saved in the database. You can now log in.</p>
           <Link to="/login" className="btn btn-primary">Go to Login</Link>
         </div>
       </div>

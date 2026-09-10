@@ -1,10 +1,11 @@
 import React, { useContext } from 'react';
-import { Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { AuthContext } from './context/AuthContext';
 import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import './App.css';
 
 import Landing from './views/Landing';
 import Login from './views/Login';
@@ -15,6 +16,9 @@ import Employees from './views/Employees';
 import Payroll from './views/Payroll';
 import Analytics from './views/Analytics';
 import Documents from './views/Documents';
+import Profile from './views/Profile';
+import Appraisals from './views/Appraisals';
+import Skills from './views/Skills';
 
 const App = () => {
   const { authState, logout } = useContext(AuthContext);
@@ -22,7 +26,7 @@ const App = () => {
   const location = useLocation();
 
   // Paths that render the Dashboard layout with sidebar
-  const isDashboardRoute = ['/dashboard', '/employees', '/leaves', '/payroll', '/analytics', '/documents'].includes(location.pathname);
+  const isDashboardRoute = ['/dashboard', '/employees', '/leaves', '/payroll', '/analytics', '/documents', '/profile', '/appraisals', '/skills'].includes(location.pathname);
 
   const handleLogout = () => {
     logout();
@@ -91,6 +95,16 @@ const App = () => {
                 </NavLink>
               </li>
               <li>
+                <NavLink to="/appraisals" className={({ isActive }) => isActive ? "sidebar-link active" : "sidebar-link"}>
+                  <span>⭐</span> <span className="sidebar-link-text">Appraisals</span>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/skills" className={({ isActive }) => isActive ? "sidebar-link active" : "sidebar-link"}>
+                  <span>💡</span> <span className="sidebar-link-text">Skills</span>
+                </NavLink>
+              </li>
+              <li>
                 <NavLink to="/analytics" className={({ isActive }) => isActive ? "sidebar-link active" : "sidebar-link"}>
                   <span>📈</span> <span className="sidebar-link-text">Analytics</span>
                 </NavLink>
@@ -100,18 +114,25 @@ const App = () => {
                   <span>📁</span> <span className="sidebar-link-text">Documents</span>
                 </NavLink>
               </li>
+              <li>
+                <NavLink to="/profile" className={({ isActive }) => isActive ? "sidebar-link active" : "sidebar-link"}>
+                  <span>👤</span> <span className="sidebar-link-text">Profile</span>
+                </NavLink>
+              </li>
             </ul>
 
             <div className="sidebar-footer">
-              <div className="user-avatar">{getInitials(authState.name)}</div>
-              <div className="sidebar-footer-info" style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>
-                  {authState.name}
+              <NavLink to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0, textDecoration: 'none' }}>
+                <div className="user-avatar">{getInitials(authState.name)}</div>
+                <div className="sidebar-footer-info" style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>
+                    {authState.name}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {getDesignation()}
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {getDesignation()}
-                </div>
-              </div>
+              </NavLink>
               <button onClick={handleLogout} className="icon-btn" title="Logout" style={{ color: 'var(--danger-color)' }}>
                 <span>🚪</span>
               </button>
@@ -131,7 +152,9 @@ const App = () => {
                 <button className="icon-btn" title="Notifications">
                   <span>🔔</span>
                 </button>
-                <div className="user-avatar" title={authState.name}>{getInitials(authState.name)}</div>
+                <NavLink to="/profile" className="user-avatar" title={authState.name} style={{ textDecoration: 'none' }}>
+                  {getInitials(authState.name)}
+                </NavLink>
               </div>
             </header>
 
@@ -142,8 +165,11 @@ const App = () => {
                 <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
                 <Route path="/leaves" element={<ProtectedRoute><LeaveManagement /></ProtectedRoute>} />
                 <Route path="/payroll" element={<ProtectedRoute><Payroll /></ProtectedRoute>} />
+                <Route path="/appraisals" element={<ProtectedRoute><Appraisals /></ProtectedRoute>} />
+                <Route path="/skills" element={<ProtectedRoute><Skills /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                 <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               </Routes>
             </main>
@@ -163,7 +189,16 @@ const App = () => {
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="*" element={<Landing />} />
+            <Route path="/dashboard" element={<Navigate to="/login" replace />} />
+            <Route path="/employees" element={<Navigate to="/login" replace />} />
+            <Route path="/leaves" element={<Navigate to="/login" replace />} />
+            <Route path="/payroll" element={<Navigate to="/login" replace />} />
+            <Route path="/appraisals" element={<Navigate to="/login" replace />} />
+            <Route path="/skills" element={<Navigate to="/login" replace />} />
+            <Route path="/analytics" element={<Navigate to="/login" replace />} />
+            <Route path="/documents" element={<Navigate to="/login" replace />} />
+            <Route path="/profile" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
         <Footer />

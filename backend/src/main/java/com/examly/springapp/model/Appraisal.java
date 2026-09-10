@@ -10,8 +10,6 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "appraisals")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class Appraisal {
 

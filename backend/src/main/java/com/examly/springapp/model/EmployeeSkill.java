@@ -10,7 +10,6 @@ import java.io.Serializable;
 @Entity
 @Table(name = "employee_skills")
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class EmployeeSkill {
@@ -49,8 +48,6 @@ public class EmployeeSkill {
 
     @Embeddable
     @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class EmployeeSkillId implements Serializable {
         @Column(name = "employee_id")
         private Long employeeId;

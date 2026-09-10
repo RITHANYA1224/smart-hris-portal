@@ -1,9 +1,10 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import employeeService from '../services/employeeService';
 
 const Employees = () => {
   const { authState } = useContext(AuthContext);
-  const { token, role } = authState;
+  const { role } = authState;
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,17 +36,10 @@ const Employees = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('http://localhost:8080/api/employees/search?query=', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setEmployees(data);
-      } else {
-        setError('Failed to fetch employees list.');
-      }
+      const data = await employeeService.getAllEmployees();
+      setEmployees(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError('Connection failure.');
+      setError(err.response?.data?.message || 'Failed to fetch employees list.');
     } finally {
       setLoading(false);
     }
@@ -56,44 +50,34 @@ const Employees = () => {
     setError('');
     setSuccess('');
     try {
-      const response = await fetch('http://localhost:8080/api/employees', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(newEmp)
+      await employeeService.createEmployee(newEmp);
+      setSuccess('Employee profile successfully created.');
+      setShowAddModal(false);
+      setNewEmp({
+        employeeId: '',
+        name: '',
+        phoneNumber: '',
+        email: '',
+        designation: '',
+        dateOfJoining: '',
+        employmentType: 'FULL_TIME',
+        status: 'ACTIVE'
       });
-      const data = await response.json();
-      if (response.ok) {
-        setSuccess('Employee profile successfully created.');
-        setShowAddModal(false);
-        setNewEmp({
-          employeeId: '',
-          name: '',
-          phoneNumber: '',
-          email: '',
-          designation: '',
-          dateOfJoining: '',
-          employmentType: 'FULL_TIME',
-          status: 'ACTIVE'
-        });
-        fetchEmployees();
-      } else {
-        setError(data.message || 'Error creating employee.');
-      }
+      fetchEmployees();
     } catch (err) {
-      setError('Connection failure.');
+      setError(err.response?.data?.message || 'Error creating employee.');
     }
   };
 
-  const handleDeleteEmployee = (empId) => {
+  const handleDeleteEmployee = async (empId) => {
     if (window.confirm('Are you sure you want to delete this employee profile?')) {
-      const list = JSON.parse(localStorage.getItem('hris_employees') || '[]');
-      const updated = list.filter(e => e.id !== empId);
-      localStorage.setItem('hris_employees', JSON.stringify(updated));
-      setSuccess('Employee deleted successfully.');
-      fetchEmployees();
+      try {
+        await employeeService.deleteEmployee(empId);
+        setSuccess('Employee deleted successfully.');
+        fetchEmployees();
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to delete employee.');
+      }
     }
   };
 
@@ -105,10 +89,15 @@ const Employees = () => {
 
   // Filtered List
   const filteredEmployees = employees.filter(emp => {
-    const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emp.designation.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emp.employeeId.toLowerCase().includes(searchQuery.toLowerCase());
+    const name = emp.name || '';
+    const email = emp.email || '';
+    const desig = emp.designation || '';
+    const empId = emp.employeeId || '';
+
+    const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      desig.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      empId.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter === 'All' || 
       (statusFilter === 'Active' && emp.status === 'ACTIVE') ||
@@ -133,192 +122,278 @@ const Employees = () => {
   const separatedCount = employees.filter(e => e.status === 'SEPARATED').length;
 
   return (
-    <div className="dashboard-content">
+    <div className="dashboard-content" style={{ padding: '2rem 2.5rem', backgroundColor: '#f8fafc' }}>
       
       {/* Header Info */}
-      <div className="dashboard-header-row">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <div>
-          <h1 style={{ background: 'none', WebkitTextFillColor: 'initial', fontSize: '1.75rem', fontWeight: 800 }}>
-            Employee Management
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>
+            Employees
           </h1>
-          <div className="dashboard-subtitle">
-            Manage your organization's employee directory, roles, and status levels.
-          </div>
+          <p style={{ fontSize: '0.95rem', color: '#64748b', marginTop: '0.25rem' }}>
+            Manage all employees in your organization
+          </p>
+        </div>
+
+        {['ADMIN', 'HR_BP', 'MANAGER'].includes(role) && (
+          <button 
+            className="btn btn-primary" 
+            onClick={() => setShowAddModal(true)}
+            style={{
+              backgroundColor: '#7F56D9',
+              color: '#ffffff',
+              padding: '0.65rem 1.25rem',
+              borderRadius: '8px',
+              border: 'none',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            + Add Employee
+          </button>
+        )}
+      </div>
+
+      {error && <div style={{ padding: '0.75rem', backgroundColor: '#fef2f2', color: '#b91c1c', borderRadius: '8px', marginBottom: '1rem' }}>{error}</div>}
+      {success && <div style={{ padding: '0.75rem', backgroundColor: '#f0fdf4', color: '#15803d', borderRadius: '8px', marginBottom: '1rem' }}>{success}</div>}
+
+      {/* Stats Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem', marginBottom: '1.5rem' }}>
+        <div className="pastel-card-1" style={{ padding: '1.25rem', borderRadius: '14px' }}>
+          <div className="kpi-label">Total Employees</div>
+          <div className="kpi-value" style={{ marginTop: '0.35rem' }}>{totalCount}</div>
+        </div>
+        <div className="pastel-card-2" style={{ padding: '1.25rem', borderRadius: '14px' }}>
+          <div className="kpi-label">Active Staff</div>
+          <div className="kpi-value" style={{ marginTop: '0.35rem' }}>{activeCount}</div>
+        </div>
+        <div className="pastel-card-3" style={{ padding: '1.25rem', borderRadius: '14px' }}>
+          <div className="kpi-label">On Notice</div>
+          <div className="kpi-value" style={{ marginTop: '0.35rem' }}>{leaveCount}</div>
+        </div>
+        <div className="pastel-card-4" style={{ padding: '1.25rem', borderRadius: '14px' }}>
+          <div className="kpi-label">Inactive</div>
+          <div className="kpi-value" style={{ marginTop: '0.35rem' }}>{separatedCount}</div>
         </div>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
-
-      {/* Stats row cards */}
-      <section className="kpi-grid">
-        <div className="card kpi-card">
-          <div className="kpi-icon bg-blue">👥</div>
-          <div>
-            <div className="kpi-value">{totalCount}</div>
-            <div className="kpi-label">Total Employees</div>
-          </div>
-        </div>
-        <div className="card kpi-card">
-          <div className="kpi-icon bg-green">✓</div>
-          <div>
-            <div className="kpi-value">{activeCount}</div>
-            <div className="kpi-label">Active Staff</div>
-          </div>
-        </div>
-        <div className="card kpi-card">
-          <div className="kpi-icon bg-orange">🕒</div>
-          <div>
-            <div className="kpi-value">{leaveCount}</div>
-            <div className="kpi-label">On Leave / notice</div>
-          </div>
-        </div>
-        <div className="card kpi-card">
-          <div className="kpi-icon bg-pink">✕</div>
-          <div>
-            <div className="kpi-value">{separatedCount}</div>
-            <div className="kpi-label">Inactive / Separated</div>
-          </div>
-        </div>
-      </section>
-
-      {/* Filter and Action Controls */}
-      <section className="card" style={{ padding: '1rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', flex: 1, minWidth: '300px' }}>
-          <div className="search-container" style={{ flex: 1 }}>
-            <span className="search-icon">🔍</span>
-            <input 
-              type="text" 
-              placeholder="Search employees..." 
-              className="search-input" 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+      {/* Filter and Table Container */}
+      <div style={{ background: 'linear-gradient(145deg, #ffffff 0%, #faf5ff 100%)', borderRadius: '16px', border: '1px solid #e9d5ff', overflow: 'hidden', boxShadow: '0 6px 22px rgba(147, 51, 234, 0.05)' }}>
+        <div style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3e8ff', backgroundColor: 'rgba(250, 245, 255, 0.3)' }}>
+          <input 
+            type="text" 
+            placeholder="Search employee..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              padding: '0.6rem 1rem',
+              borderRadius: '8px',
+              border: '1px solid #e9d5ff',
+              fontSize: '0.9rem',
+              width: '280px',
+              backgroundColor: '#ffffff',
+              color: '#2e1065'
+            }}
+          />
           <select 
-            className="form-input" 
-            style={{ width: '150px', padding: '0.5rem' }} 
-            value={statusFilter}
+            value={statusFilter} 
             onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid #e9d5ff', fontSize: '0.9rem', backgroundColor: '#ffffff', color: '#2e1065' }}
           >
-            <option value="All">All Statuses</option>
+            <option value="All">All Status</option>
             <option value="Active">Active</option>
-            <option value="On Leave">On Leave</option>
+            <option value="On Leave">On Notice</option>
             <option value="Inactive">Inactive</option>
           </select>
         </div>
 
-        {['Admin', 'HR BP'].includes(role) && (
-          <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-            <span>➕</span> Add Employee
-          </button>
-        )}
-      </section>
-
-      {/* Directory Table */}
-      <section className="table-wrapper">
-        <table className="table">
+        {/* Employees Table */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
-            <tr>
-              <th>Employee</th>
-              <th>Department</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Joined Date</th>
-              {['Admin', 'HR BP'].includes(role) && <th>Actions</th>}
+            <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
+              <th style={{ padding: '1rem 1.5rem' }}>ID</th>
+              <th style={{ padding: '1rem 1.5rem' }}>Name</th>
+              <th style={{ padding: '1rem 1.5rem' }}>Department</th>
+              <th style={{ padding: '1rem 1.5rem' }}>Email</th>
+              <th style={{ padding: '1rem 1.5rem' }}>Status</th>
+              <th style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {filteredEmployees.length === 0 ? (
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-                  No employee records match your search criteria.
+                <td colSpan="6" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>
+                  No employee records found.
                 </td>
               </tr>
             ) : (
               filteredEmployees.map((emp) => (
-                <tr key={emp.id}>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <div className="user-avatar">{getInitials(emp.name)}</div>
-                      <div>
-                        <div style={{ fontWeight: 600 }}>{emp.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{emp.email}</div>
-                      </div>
-                    </div>
+                <tr key={emp.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                  <td style={{ padding: '1rem 1.5rem', fontSize: '0.9rem', fontWeight: 600, color: '#64748b' }}>
+                    {emp.employeeId || `EMP00${emp.id}`}
                   </td>
-                  <td>{emp.departmentId === 2 ? 'Human Resources' : (emp.departmentId === 3 ? 'Finance' : 'Engineering')}</td>
-                  <td>{emp.designation}</td>
-                  <td>
-                    <span className={`badge ${emp.status === 'ACTIVE' ? 'badge-success' : (emp.status === 'ON_NOTICE' ? 'badge-warning' : 'badge-danger')}`}>
-                      {emp.status}
+                  <td style={{ padding: '1rem 1.5rem', fontSize: '0.95rem', fontWeight: 600, color: '#1e293b' }}>
+                    {emp.name}
+                  </td>
+                  <td style={{ padding: '1rem 1.5rem', fontSize: '0.9rem', color: '#64748b' }}>
+                    {emp.departmentName || (emp.department ? emp.department.deptName : 'IT')}
+                  </td>
+                  <td style={{ padding: '1rem 1.5rem', fontSize: '0.9rem', color: '#64748b' }}>
+                    {emp.email}
+                  </td>
+                  <td style={{ padding: '1rem 1.5rem' }}>
+                    <span style={{
+                      padding: '0.35rem 0.75rem',
+                      borderRadius: '9999px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      backgroundColor: emp.status === 'ACTIVE' ? '#dcfce7' : '#fee2e2',
+                      color: emp.status === 'ACTIVE' ? '#15803d' : '#b91c1c'
+                    }}>
+                      {emp.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td>{emp.dateOfJoining}</td>
-                  {['Admin', 'HR BP'].includes(role) && (
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button className="icon-btn" title="Delete Profile" style={{ color: 'var(--danger-color)' }} onClick={() => handleDeleteEmployee(emp.id)}>
-                          <span>🗑️</span>
-                        </button>
-                      </div>
-                    </td>
-                  )}
+                  <td style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>
+                    <button
+                      onClick={() => handleDeleteEmployee(emp.id)}
+                      style={{
+                        padding: '0.4rem 0.85rem',
+                        backgroundColor: '#ef4444',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        marginRight: '0.5rem'
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
-      </section>
+      </div>
 
-      {/* Add Modal */}
+      {/* Add Employee Modal */}
       {showAddModal && (
-        <div style={{ position: 'fixed', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div className="card" style={{ maxWidth: '600px', width: '100%' }}>
-            <h3 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>Create New Employee Profile</h3>
-            <form onSubmit={handleAddEmployee}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Employee ID</label>
-                  <input type="text" className="form-input" placeholder="e.g. EMP100" value={newEmp.employeeId} onChange={(e) => setNewEmp({...newEmp, employeeId: e.target.value})} required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Name</label>
-                  <input type="text" className="form-input" placeholder="Letters & spaces only" value={newEmp.name} onChange={(e) => setNewEmp({...newEmp, name: e.target.value})} required />
-                </div>
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            padding: '2rem',
+            maxWidth: '480px',
+            width: '100%',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+          }}>
+            <h2 style={{ fontSize: '1.35rem', fontWeight: 800, marginBottom: '1.25rem', color: '#1e293b' }}>
+              Add New Employee
+            </h2>
+
+            <form onSubmit={handleAddEmployee} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem', color: '#334155' }}>Employee ID</label>
+                <input
+                  type="text"
+                  required
+                  value={newEmp.employeeId}
+                  onChange={(e) => setNewEmp({ ...newEmp, employeeId: e.target.value })}
+                  placeholder="EMP005"
+                  style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                />
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Phone Number</label>
-                  <input type="text" className="form-input" placeholder="Exactly 10 digits" value={newEmp.phoneNumber} onChange={(e) => setNewEmp({...newEmp, phoneNumber: e.target.value})} required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Email</label>
-                  <input type="email" className="form-input" placeholder="Unique email address" value={newEmp.email} onChange={(e) => setNewEmp({...newEmp, email: e.target.value})} required />
-                </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem', color: '#334155' }}>Name</label>
+                <input
+                  type="text"
+                  required
+                  value={newEmp.name}
+                  onChange={(e) => setNewEmp({ ...newEmp, name: e.target.value })}
+                  placeholder="Full Name"
+                  style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                />
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Designation</label>
-                  <input type="text" className="form-input" placeholder="e.g. Architect" value={newEmp.designation} onChange={(e) => setNewEmp({...newEmp, designation: e.target.value})} required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Date of Joining</label>
-                  <input type="date" className="form-input" value={newEmp.dateOfJoining} onChange={(e) => setNewEmp({...newEmp, dateOfJoining: e.target.value})} required />
-                </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem', color: '#334155' }}>Phone Number</label>
+                <input
+                  type="text"
+                  required
+                  value={newEmp.phoneNumber}
+                  onChange={(e) => setNewEmp({ ...newEmp, phoneNumber: e.target.value })}
+                  placeholder="9876543210"
+                  style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                />
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Profile</button>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem', color: '#334155' }}>Email</label>
+                <input
+                  type="email"
+                  required
+                  value={newEmp.email}
+                  onChange={(e) => setNewEmp({ ...newEmp, email: e.target.value })}
+                  placeholder="name@company.com"
+                  style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem', color: '#334155' }}>Designation</label>
+                <input
+                  type="text"
+                  required
+                  value={newEmp.designation}
+                  onChange={(e) => setNewEmp({ ...newEmp, designation: e.target.value })}
+                  placeholder="Software Engineer"
+                  style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.35rem', color: '#334155' }}>Date of Joining</label>
+                <input
+                  type="date"
+                  required
+                  value={newEmp.dateOfJoining}
+                  onChange={(e) => setNewEmp({ ...newEmp, dateOfJoining: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#e2e8f0', color: '#475569', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#7F56D9', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Create Employee
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
     </div>
   );
 };

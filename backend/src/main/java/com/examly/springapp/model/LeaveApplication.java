@@ -10,8 +10,6 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "leave_applications")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class LeaveApplication {
 

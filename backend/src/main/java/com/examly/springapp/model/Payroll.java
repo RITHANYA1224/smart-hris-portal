@@ -11,8 +11,6 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "payroll")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class Payroll {
 

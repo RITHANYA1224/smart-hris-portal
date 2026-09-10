@@ -13,7 +13,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@RequiredArgsConstructor
 @Tag(name = "Statutory Compliance & Analytics", description = "PF/ESI statutory filings, appraisals initiation, and headcount attrition analytics")
 public class ComplianceController {
 

@@ -1,9 +1,10 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import leaveService from '../services/leaveService';
 
 const LeaveManagement = () => {
   const { authState } = useContext(AuthContext);
-  const { token, role } = authState;
+  const { role } = authState;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -29,17 +30,10 @@ const LeaveManagement = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:8080/api/leaves/pending', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setLeavesList(data);
-      } else {
-        setError('Failed to fetch leave requests.');
-      }
+      const data = await leaveService.getAllLeaves();
+      setLeavesList(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError('Connection failed while loading leaves.');
+      setError(err.response?.data?.message || 'Failed to fetch leave requests.');
     } finally {
       setLoading(false);
     }
@@ -56,7 +50,6 @@ const LeaveManagement = () => {
     }
 
     try {
-      // Map view category back to API type
       const leaveTypeMapping = {
         'Annual Leave': 'CASUAL',
         'Sick Leave': 'SICK',
@@ -64,99 +57,57 @@ const LeaveManagement = () => {
         'Work From Home': 'COMP_OFF'
       };
 
-      const response = await fetch('http://localhost:8080/api/leaves', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          leaveType: leaveTypeMapping[newLeave.leaveType] || 'CASUAL',
-          fromDate: newLeave.fromDate,
-          toDate: newLeave.toDate,
-          reason: newLeave.reason
-        })
+      await leaveService.applyLeave({
+        employeeId: 1,
+        leaveType: leaveTypeMapping[newLeave.leaveType] || 'CASUAL',
+        fromDate: newLeave.fromDate,
+        toDate: newLeave.toDate,
+        reason: newLeave.reason
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccess('Leave application successfully submitted.');
-        setNewLeave({ leaveType: 'Annual Leave', fromDate: '', toDate: '', reason: '' });
-        fetchLeaves();
-      } else {
-        setError(data.message || 'Failed to submit leave application.');
-      }
+      setSuccess('Leave application successfully submitted.');
+      setNewLeave({ leaveType: 'Annual Leave', fromDate: '', toDate: '', reason: '' });
+      fetchLeaves();
     } catch (err) {
-      setError('Connection failure.');
+      setError(err.response?.data?.message || 'Failed to submit leave application.');
     }
   };
 
-  const handleApprove = async (id, status) => {
+  const handleApprove = async (id) => {
     setError('');
     setSuccess('');
     try {
-      const response = await fetch(`http://localhost:8080/api/leaves/${id}/approve`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccess(`Leave request successfully ${status.toLowerCase()}.`);
-        fetchLeaves();
-      } else {
-        setError(data.message || 'Operation failed.');
-      }
+      await leaveService.approveLeave(id, 2);
+      setSuccess('Leave application successfully approved.');
+      fetchLeaves();
     } catch (err) {
-      setError('Connection failure.');
+      setError(err.response?.data?.message || 'Failed to update leave status.');
     }
   };
 
-  // Date formatter
-  const formatDateRange = (from, to) => {
-    const fDate = new Date(from).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const tDate = new Date(to).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    return `${fDate} - ${tDate}`;
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this leave request?')) {
+      try {
+        await leaveService.deleteLeave(id);
+        setSuccess('Leave request deleted.');
+        fetchLeaves();
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to delete leave request.');
+      }
+    }
   };
 
-  // Day count helper
-  const getDaysCount = (from, to) => {
-    const days = Math.round((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24)) + 1;
-    return isNaN(days) ? 0 : days;
-  };
-
-  // Avatar initial
-  const getInitials = (nameStr) => {
-    if (!nameStr) return 'U';
-    return nameStr.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-  };
-
-  // Filter leaves based on active tab
-  const filteredLeaves = leavesList.filter(l => {
-    if (activeTab === 'All') return true;
-    if (activeTab === 'Pending') return l.status === 'PENDING';
-    if (activeTab === 'Approved') return l.status === 'APPROVED';
-    if (activeTab === 'Rejected') return l.status === 'REJECTED';
+  // Filtered List based on tabs
+  const filteredLeaves = leavesList.filter(item => {
+    if (activeTab === 'Pending') return item.status === 'PENDING';
+    if (activeTab === 'Approved') return item.status === 'APPROVED';
+    if (activeTab === 'Rejected') return item.status === 'REJECTED';
     return true;
   });
 
-  // Map backend Enum to human readable
-  const formatLeaveType = (type) => {
-    const mapping = {
-      'CASUAL': 'Annual Leave',
-      'SICK': 'Sick Leave',
-      'EARNED': 'Personal Leave',
-      'COMP_OFF': 'Work From Home',
-      'LOP': 'Loss of Pay'
-    };
-    return mapping[type] || type;
-  };
+  const pendingCount = leavesList.filter(l => l.status === 'PENDING').length;
+  const approvedCount = leavesList.filter(l => l.status === 'APPROVED').length;
+  const rejectedCount = leavesList.filter(l => l.status === 'REJECTED').length;
 
   if (loading) {
     return (
@@ -167,174 +118,61 @@ const LeaveManagement = () => {
   }
 
   return (
-    <div className="dashboard-content">
+    <div style={{ padding: '2rem 2.5rem', backgroundColor: '#f8fafc', minHeight: 'calc(100vh - 70px)' }}>
       
       {/* Header Info */}
-      <div className="dashboard-header-row">
-        <div>
-          <h1 style={{ background: 'none', WebkitTextFillColor: 'initial', fontSize: '1.75rem', fontWeight: 800 }}>
-            Leave Management
-          </h1>
-          <div className="dashboard-subtitle">
-            Apply for leave, view time-off statistics, and manage approvals.
-          </div>
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>
+          Leave Management
+        </h1>
+        <p style={{ fontSize: '0.95rem', color: '#64748b', marginTop: '0.25rem' }}>
+          Manage employee leave requests
+        </p>
+      </div>
+
+      {error && <div style={{ padding: '0.75rem', backgroundColor: '#fef2f2', color: '#b91c1c', borderRadius: '8px', marginBottom: '1rem' }}>{error}</div>}
+      {success && <div style={{ padding: '0.75rem', backgroundColor: '#f0fdf4', color: '#15803d', borderRadius: '8px', marginBottom: '1rem' }}>{success}</div>}
+
+      {/* 3 Stat Cards in a Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+        {/* Pending */}
+        <div className="pastel-card-1" style={{ borderRadius: '16px', padding: '1.5rem' }}>
+          <div className="kpi-label" style={{ marginBottom: '0.35rem' }}>Pending</div>
+          <div className="kpi-value" style={{ fontSize: '2.25rem', lineHeight: 1 }}>{pendingCount}</div>
+          <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', fontWeight: 600, color: '#9333ea' }}>Awaiting Approval</div>
+        </div>
+
+        {/* Approved */}
+        <div className="pastel-card-2" style={{ borderRadius: '16px', padding: '1.5rem' }}>
+          <div className="kpi-label" style={{ marginBottom: '0.35rem' }}>Approved</div>
+          <div className="kpi-value" style={{ fontSize: '2.25rem', lineHeight: 1 }}>{approvedCount}</div>
+          <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', fontWeight: 600, color: '#ec4899' }}>This Month</div>
+        </div>
+
+        {/* Rejected */}
+        <div className="pastel-card-3" style={{ borderRadius: '16px', padding: '1.5rem' }}>
+          <div className="kpi-label" style={{ marginBottom: '0.35rem' }}>Rejected</div>
+          <div className="kpi-value" style={{ fontSize: '2.25rem', lineHeight: 1 }}>{rejectedCount}</div>
+          <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', fontWeight: 600, color: '#c084fc' }}>Declined Requests</div>
         </div>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
-
-      {/* Leave Allowances Row */}
-      <section className="kpi-grid">
-        <div className="card kpi-card" style={{ display: 'block', padding: '1.25rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Annual Leave</span>
-            <span style={{ fontSize: '1.5rem', padding: '0.35rem', backgroundColor: 'var(--primary-light)', borderRadius: '8px' }}>👤</span>
-          </div>
-          <div style={{ marginTop: '0.85rem' }}>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800 }}>13</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>days remaining</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border-color)', marginTop: '0.75rem', paddingTop: '0.5rem' }}>
-              8 used of 21 total
-            </div>
-          </div>
-        </div>
-
-        <div className="card kpi-card" style={{ display: 'block', padding: '1.25rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Sick Leave</span>
-            <span style={{ fontSize: '1.5rem', padding: '0.35rem', backgroundColor: '#d1fae5', borderRadius: '8px' }}>🤢</span>
-          </div>
-          <div style={{ marginTop: '0.85rem' }}>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800 }}>7</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>days remaining</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border-color)', marginTop: '0.75rem', paddingTop: '0.5rem' }}>
-              3 used of 10 total
-            </div>
-          </div>
-        </div>
-
-        <div className="card kpi-card" style={{ display: 'block', padding: '1.25rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Personal Leave</span>
-            <span style={{ fontSize: '1.5rem', padding: '0.35rem', backgroundColor: '#f3e8ff', borderRadius: '8px' }}>🏡</span>
-          </div>
-          <div style={{ marginTop: '0.85rem' }}>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800 }}>3</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>days remaining</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border-color)', marginTop: '0.75rem', paddingTop: '0.5rem' }}>
-              2 used of 5 total
-            </div>
-          </div>
-        </div>
-
-        <div className="card kpi-card" style={{ display: 'block', padding: '1.25rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Work From Home</span>
-            <span style={{ fontSize: '1.5rem', padding: '0.35rem', backgroundColor: '#fef3c7', borderRadius: '8px' }}>💻</span>
-          </div>
-          <div style={{ marginTop: '0.85rem' }}>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800 }}>7</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>days remaining</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border-color)', marginTop: '0.75rem', paddingTop: '0.5rem' }}>
-              5 used of 12 total
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Two-column Content Grid */}
-      <section className="dashboard-grid-2-1">
+      {/* Leave Application Form + List */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem' }}>
         
-        {/* Leaves Table Column */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          
-          {/* Tabs row & button */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {['All', 'Pending', 'Approved', 'Rejected'].map(t => (
-                <button 
-                  key={t} 
-                  className={`tab-btn ${activeTab === t ? 'active' : ''}`}
-                  onClick={() => setActiveTab(t)}
-                  style={{ padding: '0.5rem 0.75rem' }}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Form Container */}
+        <div style={{ background: 'linear-gradient(145deg, #f5f3ff 0%, #faf5ff 50%, #fdf2f8 100%)', borderRadius: '16px', padding: '1.5rem', border: '1px solid #e9d5ff', boxShadow: '0 6px 22px rgba(147, 51, 234, 0.08)' }}>
+          <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#2e1065', marginBottom: '1.25rem' }}>
+            Apply for Leave
+          </h2>
 
-          <div className="table-wrapper">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Employee</th>
-                  <th>Type</th>
-                  <th>Duration</th>
-                  <th>Days</th>
-                  <th>Status</th>
-                  {['Admin', 'HR BP', 'Manager', 'Dept Head'].includes(role) && <th>Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredLeaves.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-                      No leave requests found in this tab.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredLeaves.map((leave) => (
-                    <tr key={leave.id}>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <div className="user-avatar">{getInitials(leave.employee?.name || 'Self')}</div>
-                          <div>
-                            <div style={{ fontWeight: 600 }}>{leave.employee?.name || 'Self'}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>{formatLeaveType(leave.leaveType)}</td>
-                      <td>{formatDateRange(leave.fromDate, leave.toDate)}</td>
-                      <td>
-                        <span className="badge badge-info" style={{ borderRadius: 'var(--radius-sm)' }}>
-                          {getDaysCount(leave.fromDate, leave.toDate)}d
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`badge ${leave.status === 'APPROVED' ? 'badge-success' : leave.status === 'PENDING' ? 'badge-warning' : 'badge-danger'}`}>
-                          {leave.status}
-                        </span>
-                      </td>
-                      {['Admin', 'HR BP', 'Manager', 'Dept Head'].includes(role) && (
-                        <td>
-                          {leave.status === 'PENDING' && (
-                            <div style={{ display: 'flex', gap: '0.35rem' }}>
-                              <button className="btn btn-primary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => handleApprove(leave.id, 'APPROVED')}>✓ Approve</button>
-                              <button className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => handleApprove(leave.id, 'REJECTED')}>✕ Reject</button>
-                            </div>
-                          )}
-                        </td>
-                      )}
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Apply for Leave Form Column */}
-        <div className="card">
-          <div className="card-title">Apply for Leave</div>
-          <form onSubmit={handleApplyLeave} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Leave Type</label>
-              <select 
-                className="form-input" 
+          <form onSubmit={handleApplyLeave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#581c87', marginBottom: '0.35rem' }}>Leave Type</label>
+              <select
                 value={newLeave.leaveType}
-                onChange={(e) => setNewLeave({...newLeave, leaveType: e.target.value})}
+                onChange={(e) => setNewLeave({ ...newLeave, leaveType: e.target.value })}
+                style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #d8b4fe', backgroundColor: '#f5f3ff', color: '#2e1065' }}
               >
                 <option value="Annual Leave">Annual Leave</option>
                 <option value="Sick Leave">Sick Leave</option>
@@ -343,47 +181,154 @@ const LeaveManagement = () => {
               </select>
             </div>
 
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">From Date</label>
-              <input 
-                type="date" 
-                className="form-input" 
-                value={newLeave.fromDate}
-                onChange={(e) => setNewLeave({...newLeave, fromDate: e.target.value})}
-                required 
-              />
-            </div>
-
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">To Date</label>
-              <input 
-                type="date" 
-                className="form-input" 
-                value={newLeave.toDate}
-                onChange={(e) => setNewLeave({...newLeave, toDate: e.target.value})}
-                required 
-              />
-            </div>
-
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Reason</label>
-              <textarea 
-                className="form-input" 
-                rows="3" 
-                placeholder="Brief description of your reason..."
-                value={newLeave.reason}
-                onChange={(e) => setNewLeave({...newLeave, reason: e.target.value})}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#581c87', marginBottom: '0.35rem' }}>From Date</label>
+              <input
+                type="date"
                 required
+                value={newLeave.fromDate}
+                onChange={(e) => setNewLeave({ ...newLeave, fromDate: e.target.value })}
+                style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #d8b4fe', backgroundColor: '#f5f3ff', color: '#2e1065' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#581c87', marginBottom: '0.35rem' }}>To Date</label>
+              <input
+                type="date"
+                required
+                value={newLeave.toDate}
+                onChange={(e) => setNewLeave({ ...newLeave, toDate: e.target.value })}
+                style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #d8b4fe', backgroundColor: '#f5f3ff', color: '#2e1065' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#581c87', marginBottom: '0.35rem' }}>Reason</label>
+              <textarea
+                rows="3"
+                required
+                value={newLeave.reason}
+                onChange={(e) => setNewLeave({ ...newLeave, reason: e.target.value })}
+                placeholder="Reason for leave..."
+                style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #d8b4fe', backgroundColor: '#f5f3ff', color: '#2e1065', resize: 'vertical' }}
               ></textarea>
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.65rem' }}>
-              Submit Request
+            <button
+              type="submit"
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                background: 'linear-gradient(135deg, #9333ea, #7c3aed)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(147, 51, 234, 0.22)'
+              }}
+            >
+              Submit Application
             </button>
           </form>
         </div>
 
-      </section>
+        {/* Requests Table Container */}
+        <div style={{ background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, #faf5ff 60%, #fdf2f8 100%)', borderRadius: '16px', padding: '1.5rem', border: '1px solid #e9d5ff', boxShadow: '0 4px 20px -2px rgba(147, 51, 234, 0.06)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#2e1065', margin: 0 }}>
+              Recent Leave Requests
+            </h2>
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {['All', 'Pending', 'Approved', 'Rejected'].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    backgroundColor: activeTab === tab ? '#7F56D9' : '#f1f5f9',
+                    color: activeTab === tab ? '#ffffff' : '#64748b'
+                  }}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#faf7ff', borderBottom: '1px solid #e9d5ff', color: '#581c87', fontSize: '0.85rem', fontWeight: 600 }}>
+                <th style={{ padding: '0.75rem 0' }}>Employee</th>
+                <th style={{ padding: '0.75rem 0' }}>Leave Type</th>
+                <th style={{ padding: '0.75rem 0' }}>Duration</th>
+                <th style={{ padding: '0.75rem 0' }}>Status</th>
+                {['ADMIN', 'HR_BP', 'MANAGER'].includes(role) && <th style={{ padding: '0.75rem 0', textAlign: 'right' }}>Action</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredLeaves.length === 0 ? (
+                <tr>
+                  <td colSpan="5" style={{ padding: '2rem 0', textAlign: 'center', color: '#94a3b8' }}>
+                    No leave requests found.
+                  </td>
+                </tr>
+              ) : (
+                filteredLeaves.map((leave) => (
+                  <tr key={leave.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                    <td style={{ padding: '0.85rem 0', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
+                      {leave.employeeName || 'John David'}
+                    </td>
+                    <td style={{ padding: '0.85rem 0', fontSize: '0.85rem', color: '#64748b' }}>
+                      {leave.leaveType}
+                    </td>
+                    <td style={{ padding: '0.85rem 0', fontSize: '0.85rem', color: '#64748b' }}>
+                      {leave.fromDate} to {leave.toDate}
+                    </td>
+                    <td style={{ padding: '0.85rem 0' }}>
+                      <span style={{
+                        padding: '0.25rem 0.65rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        backgroundColor: leave.status === 'APPROVED' ? '#dcfce7' : leave.status === 'PENDING' ? '#fef9c3' : '#fee2e2',
+                        color: leave.status === 'APPROVED' ? '#15803d' : leave.status === 'PENDING' ? '#a16207' : '#b91c1c'
+                      }}>
+                        {leave.status}
+                      </span>
+                    </td>
+                    {['ADMIN', 'HR_BP', 'MANAGER'].includes(role) && (
+                      <td style={{ padding: '0.85rem 0', textAlign: 'right' }}>
+                        {leave.status === 'PENDING' && (
+                          <button
+                            onClick={() => handleApprove(leave.id)}
+                            style={{ padding: '0.35rem 0.65rem', backgroundColor: '#16a34a', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', marginRight: '0.35rem' }}
+                          >
+                            Approve
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDelete(leave.id)}
+                          style={{ padding: '0.35rem 0.65rem', backgroundColor: '#ef4444', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };

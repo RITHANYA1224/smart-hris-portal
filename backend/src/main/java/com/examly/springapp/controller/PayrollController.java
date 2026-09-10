@@ -13,7 +13,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/payroll")
-@RequiredArgsConstructor
 @Tag(name = "Payroll Management", description = "Run monthly payroll with CTC breakdown, statutory deductions, and generate payslips")
 public class PayrollController {
 
