@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const Analytics = () => {
+  const [selectedRange, setSelectedRange] = useState('Full Year 2026');
+
   // Department headcount dataset
   const deptData = [
     { name: 'Eng 45%', color: 'var(--primary-color)' },
@@ -9,18 +11,72 @@ const Analytics = () => {
     { name: 'Fin 20%', color: 'var(--warning-color)' },
   ];
 
+  // 12 Months Dataset for 2026 (Jan - Sep Actual, Oct - Dec Upcoming Projections)
+  const growthPoints = [
+    { month: 'Jan', val: '275', x: 25, y: 140, isForecast: false },
+    { month: 'Feb', val: '284', x: 66, y: 125, isForecast: false },
+    { month: 'Mar', val: '295', x: 107, y: 110, isForecast: false },
+    { month: 'Apr', val: '304', x: 148, y: 98, isForecast: false },
+    { month: 'May', val: '315', x: 189, y: 85, isForecast: false },
+    { month: 'Jun', val: '320', x: 230, y: 78, isForecast: false },
+    { month: 'Jul', val: '328', x: 271, y: 70, isForecast: false },
+    { month: 'Aug', val: '335', x: 312, y: 62, isForecast: false },
+    { month: 'Sep', val: '342', x: 353, y: 54, isForecast: false },
+    { month: 'Oct', val: '350', x: 394, y: 45, isForecast: true },
+    { month: 'Nov', val: '358', x: 435, y: 36, isForecast: true },
+    { month: 'Dec', val: '365', x: 476, y: 28, isForecast: true },
+  ];
+
+  const attritionPoints = [
+    { month: 'Jan', val: '4.5%', x: 25, y: 40, isForecast: false },
+    { month: 'Feb', val: '4.1%', x: 66, y: 55, isForecast: false },
+    { month: 'Mar', val: '3.8%', x: 107, y: 70, isForecast: false },
+    { month: 'Apr', val: '3.4%', x: 148, y: 88, isForecast: false },
+    { month: 'May', val: '3.2%', x: 189, y: 96, isForecast: false },
+    { month: 'Jun', val: '3.1%', x: 230, y: 102, isForecast: false },
+    { month: 'Jul', val: '2.9%', x: 271, y: 110, isForecast: false },
+    { month: 'Aug', val: '2.8%', x: 312, y: 116, isForecast: false },
+    { month: 'Sep', val: '2.7%', x: 353, y: 120, isForecast: false },
+    { month: 'Oct', val: '2.6%', x: 394, y: 125, isForecast: true },
+    { month: 'Nov', val: '2.5%', x: 435, y: 130, isForecast: true },
+    { month: 'Dec', val: '2.4%', x: 476, y: 135, isForecast: true },
+  ];
+
   return (
     <div className="dashboard-content">
       
-      {/* Header Info */}
-      <div className="dashboard-header-row">
+      {/* Header Info & Time Selector */}
+      <div className="dashboard-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ background: 'none', WebkitTextFillColor: 'initial', fontSize: '1.75rem', fontWeight: 800 }}>
             Analytics & Reports
           </h1>
           <div className="dashboard-subtitle">
-            Track key HR performance indicators, attrition trends, headcount distributions, and organizational health metrics.
+            Track key HR metrics, workforce growth, attrition trends, and predictive projections for upcoming months.
           </div>
+        </div>
+
+        {/* Range Selector Pills */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'rgba(255, 255, 255, 0.8)', padding: '0.35rem', borderRadius: '12px', border: '1px solid rgba(147, 51, 234, 0.2)' }}>
+          {['Full Year 2026', 'H2 Forecast (Jul-Dec)', 'H1 Historical'].map((range) => (
+            <button
+              key={range}
+              onClick={() => setSelectedRange(range)}
+              style={{
+                padding: '0.45rem 0.85rem',
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: selectedRange === range ? 'var(--primary-color)' : 'transparent',
+                color: selectedRange === range ? '#ffffff' : 'var(--text-secondary)',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {range}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -41,9 +97,9 @@ const Analytics = () => {
         <div className="card kpi-card pastel-card-2">
           <div className="kpi-icon pastel-icon-pink">📉</div>
           <div>
-            <div className="kpi-value">3.1%</div>
-            <div className="kpi-label">Attrition Rate</div>
-            <div className="kpi-change down" style={{ color: '#be185d' }}>▼ -0.8% vs last period</div>
+            <div className="kpi-value">2.7%</div>
+            <div className="kpi-label">Current Attrition</div>
+            <div className="kpi-change down" style={{ color: '#be185d' }}>▼ -0.8% YoY (Forecast: 2.4%)</div>
           </div>
         </div>
 
@@ -53,7 +109,7 @@ const Analytics = () => {
           <div>
             <div className="kpi-value">8.4%</div>
             <div className="kpi-label">Hire Rate</div>
-            <div className="kpi-change up" style={{ color: '#86198f' }}>▲ +1.2% vs last period</div>
+            <div className="kpi-change up" style={{ color: '#86198f' }}>▲ +1.2% Q-o-Q</div>
           </div>
         </div>
 
@@ -72,10 +128,21 @@ const Analytics = () => {
       {/* Line Charts Grid Row */}
       <section className="dashboard-grid-2-1">
         
-        {/* Employee Growth Chart */}
+        {/* Employee Growth Chart (Jan - Dec Full Year with Forecast) */}
         <div className="card">
-          <div className="card-title">Employee Growth</div>
-          <div className="chart-container" style={{ height: '210px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <div className="card-title" style={{ margin: 0 }}>Employee Growth (Jan - Dec 2026)</div>
+            <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.7rem', fontWeight: 700 }}>
+              <span style={{ color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--primary-color)' }}></span> Actuals (Jan-Sep)
+              </span>
+              <span style={{ color: '#a855f7', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#a855f7', opacity: 0.6 }}></span> Forecast (Oct-Dec)
+              </span>
+            </div>
+          </div>
+
+          <div className="chart-container" style={{ height: '215px' }}>
             <svg viewBox="0 0 500 180" width="100%" height="100%">
               <defs>
                 <linearGradient id="chartGrad1" x1="0" y1="0" x2="0" y2="1">
@@ -84,35 +151,45 @@ const Analytics = () => {
                 </linearGradient>
               </defs>
               
-              <line x1="30" y1="30" x2="480" y2="30" stroke="var(--border-color)" strokeDasharray="3,3" />
-              <line x1="30" y1="85" x2="480" y2="85" stroke="var(--border-color)" strokeDasharray="3,3" />
-              <line x1="30" y1="140" x2="480" y2="140" stroke="var(--border-color)" strokeDasharray="3,3" />
+              <line x1="25" y1="30" x2="476" y2="30" stroke="var(--border-color)" strokeDasharray="3,3" />
+              <line x1="25" y1="85" x2="476" y2="85" stroke="var(--border-color)" strokeDasharray="3,3" />
+              <line x1="25" y1="140" x2="476" y2="140" stroke="var(--border-color)" strokeDasharray="3,3" />
+
+              {/* Shaded Forecast Zone Background */}
+              <rect x="373" y="15" width="112" height="135" fill="rgba(168, 85, 247, 0.05)" rx="6" />
+              <text x="429" y="24" fill="#9333ea" fontSize="8" fontWeight="bold" textAnchor="middle">UPCOMING PROJECTION</text>
               
               {/* Path area */}
-              <path d="M 30 140 L 120 120 L 210 100 L 300 85 L 390 60 L 480 40 L 480 150 L 30 150 Z" fill="url(#chartGrad1)" />
-              <path d="M 30 140 L 120 120 L 210 100 L 300 85 L 390 60 L 480 40" fill="none" stroke="var(--primary-color)" strokeWidth="3" strokeLinecap="round" />
+              <path d="M 25 140 L 66 125 L 107 110 L 148 98 L 189 85 L 230 78 L 271 70 L 312 62 L 353 54 L 394 45 L 435 36 L 476 28 L 476 150 L 25 150 Z" fill="url(#chartGrad1)" />
               
-              <circle cx="30" cy="140" r="4" fill="var(--primary-color)" />
-              <circle cx="120" cy="120" r="4" fill="var(--primary-color)" />
-              <circle cx="210" cy="100" r="4" fill="var(--primary-color)" />
-              <circle cx="300" cy="85" r="4" fill="var(--primary-color)" />
-              <circle cx="390" cy="60" r="4" fill="var(--primary-color)" />
-              <circle cx="480" cy="40" r="4" fill="var(--primary-color)" />
-
-              <text x="30" y="165" fill="var(--text-muted)" fontSize="10" textAnchor="middle">Jan</text>
-              <text x="120" y="165" fill="var(--text-muted)" fontSize="10" textAnchor="middle">Feb</text>
-              <text x="210" y="165" fill="var(--text-muted)" fontSize="10" textAnchor="middle">Mar</text>
-              <text x="300" y="165" fill="var(--text-muted)" fontSize="10" textAnchor="middle">Apr</text>
-              <text x="390" y="165" fill="var(--text-muted)" fontSize="10" textAnchor="middle">May</text>
-              <text x="480" y="165" fill="var(--text-muted)" fontSize="10" textAnchor="middle">Jun</text>
+              {/* Actual Line (Jan - Sep) */}
+              <path d="M 25 140 L 66 125 L 107 110 L 148 98 L 189 85 L 230 78 L 271 70 L 312 62 L 353 54" fill="none" stroke="var(--primary-color)" strokeWidth="3" strokeLinecap="round" />
+              
+              {/* Forecast Line (Sep - Dec Dashed) */}
+              <path d="M 353 54 L 394 45 L 435 36 L 476 28" fill="none" stroke="#a855f7" strokeWidth="3" strokeDasharray="4,4" strokeLinecap="round" />
+              
+              {/* Nodes */}
+              {growthPoints.map((pt, i) => (
+                <g key={i}>
+                  <circle cx={pt.x} cy={pt.y} r="3.5" fill={pt.isForecast ? '#f3e8ff' : 'var(--primary-color)'} stroke="var(--primary-color)" strokeWidth="2" />
+                  <text x={pt.x} y={pt.y - 8} fill={pt.isForecast ? '#7e22ce' : 'var(--text-secondary)'} fontSize="8" fontWeight="bold" textAnchor="middle">{pt.val}</text>
+                  <text x={pt.x} y="165" fill={pt.isForecast ? '#9333ea' : 'var(--text-muted)'} fontSize="9" fontWeight={pt.isForecast ? 'bold' : 'normal'} textAnchor="middle">{pt.month}</text>
+                </g>
+              ))}
             </svg>
           </div>
         </div>
 
-        {/* Attrition Trend (%) Chart */}
+        {/* Attrition Trend (%) Chart (Jan - Dec Full Year with Forecast) */}
         <div className="card">
-          <div className="card-title">Attrition Trend (%)</div>
-          <div className="chart-container" style={{ height: '210px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <div className="card-title" style={{ margin: 0 }}>Attrition Trend (%) & Projection</div>
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--danger-color)' }}>
+              Target Ceiling: &lt; 5.0%
+            </span>
+          </div>
+
+          <div className="chart-container" style={{ height: '215px' }}>
             <svg viewBox="0 0 500 180" width="100%" height="100%">
               <defs>
                 <linearGradient id="chartGrad2" x1="0" y1="0" x2="0" y2="1">
@@ -121,26 +198,33 @@ const Analytics = () => {
                 </linearGradient>
               </defs>
 
-              <line x1="30" y1="30" x2="480" y2="30" stroke="var(--border-color)" strokeDasharray="3,3" />
-              <line x1="30" y1="85" x2="480" y2="85" stroke="var(--border-color)" strokeDasharray="3,3" />
-              <line x1="30" y1="140" x2="480" y2="140" stroke="var(--border-color)" strokeDasharray="3,3" />
+              <line x1="25" y1="30" x2="476" y2="30" stroke="var(--border-color)" strokeDasharray="3,3" />
+              <line x1="25" y1="85" x2="476" y2="85" stroke="var(--border-color)" strokeDasharray="3,3" />
+              <line x1="25" y1="140" x2="476" y2="140" stroke="var(--border-color)" strokeDasharray="3,3" />
               
-              <path d="M 30 40 L 120 60 L 210 90 L 300 110 L 390 120 L 480 135 L 480 150 L 30 150 Z" fill="url(#chartGrad2)" />
-              <path d="M 30 40 L 120 60 L 210 90 L 300 110 L 390 120 L 480 135" fill="none" stroke="var(--danger-color)" strokeWidth="3" strokeLinecap="round" />
-              
-              <circle cx="30" cy="40" r="4" fill="var(--danger-color)" />
-              <circle cx="120" cy="60" r="4" fill="var(--danger-color)" />
-              <circle cx="210" cy="90" r="4" fill="var(--danger-color)" />
-              <circle cx="300" cy="110" r="4" fill="var(--danger-color)" />
-              <circle cx="390" cy="120" r="4" fill="var(--danger-color)" />
-              <circle cx="480" cy="135" r="4" fill="var(--danger-color)" />
+              {/* Shaded Forecast Zone */}
+              <rect x="373" y="15" width="112" height="135" fill="rgba(236, 72, 153, 0.05)" rx="6" />
+              <text x="429" y="24" fill="#be185d" fontSize="8" fontWeight="bold" textAnchor="middle">UPCOMING PROJECTION</text>
 
-              <text x="30" y="165" fill="var(--text-muted)" fontSize="10" textAnchor="middle">Jan</text>
-              <text x="120" y="165" fill="var(--text-muted)" fontSize="10" textAnchor="middle">Feb</text>
-              <text x="210" y="165" fill="var(--text-muted)" fontSize="10" textAnchor="middle">Mar</text>
-              <text x="300" y="165" fill="var(--text-muted)" fontSize="10" textAnchor="middle">Apr</text>
-              <text x="390" y="165" fill="var(--text-muted)" fontSize="10" textAnchor="middle">May</text>
-              <text x="480" y="165" fill="var(--text-muted)" fontSize="10" textAnchor="middle">Jun</text>
+              {/* Target 5% Line */}
+              <line x1="25" y1="35" x2="476" y2="35" stroke="#f43f5e" strokeDasharray="2,2" strokeWidth="1" />
+
+              <path d="M 25 40 L 66 55 L 107 70 L 148 88 L 189 96 L 230 102 L 271 110 L 312 116 L 353 120 L 394 125 L 435 130 L 476 135 L 476 150 L 25 150 Z" fill="url(#chartGrad2)" />
+              
+              {/* Actual Line (Jan - Sep) */}
+              <path d="M 25 40 L 66 55 L 107 70 L 148 88 L 189 96 L 230 102 L 271 110 L 312 116 L 353 120" fill="none" stroke="var(--danger-color)" strokeWidth="3" strokeLinecap="round" />
+
+              {/* Forecast Line (Sep - Dec Dashed) */}
+              <path d="M 353 120 L 394 125 L 435 130 L 476 135" fill="none" stroke="#be185d" strokeWidth="3" strokeDasharray="4,4" strokeLinecap="round" />
+
+              {/* Nodes */}
+              {attritionPoints.map((pt, i) => (
+                <g key={i}>
+                  <circle cx={pt.x} cy={pt.y} r="3.5" fill={pt.isForecast ? '#fce7f3' : 'var(--danger-color)'} stroke="var(--danger-color)" strokeWidth="2" />
+                  <text x={pt.x} y={pt.y - 8} fill={pt.isForecast ? '#9d174d' : 'var(--text-secondary)'} fontSize="8" fontWeight="bold" textAnchor="middle">{pt.val}</text>
+                  <text x={pt.x} y="165" fill={pt.isForecast ? '#be185d' : 'var(--text-muted)'} fontSize="9" fontWeight={pt.isForecast ? 'bold' : 'normal'} textAnchor="middle">{pt.month}</text>
+                </g>
+              ))}
             </svg>
           </div>
         </div>
@@ -153,7 +237,7 @@ const Analytics = () => {
         {/* Department Performance Score Bar Chart */}
         <div className="card">
           <div className="card-title">Department Performance Score</div>
-          <div className="chart-container" style={{ height: '220px' }}>
+          <div className="chart-container" style={{ height: '210px' }}>
             <svg viewBox="0 0 500 180" width="100%" height="100%">
               <line x1="30" y1="140" x2="480" y2="140" stroke="var(--border-color)" />
               
@@ -185,7 +269,7 @@ const Analytics = () => {
         {/* Headcount Donut Chart */}
         <div className="card">
           <div className="card-title">Headcount by Dept</div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '220px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '210px' }}>
             <svg width="140" height="140" viewBox="0 0 200 200">
               {/* Eng: 45% */}
               <circle cx="100" cy="100" r="70" fill="transparent" stroke="var(--primary-color)" strokeWidth="20" strokeDasharray="198 242" strokeDashoffset="0" />
@@ -209,20 +293,20 @@ const Analytics = () => {
 
       </section>
 
-      {/* Single Balanced Summary Section */}
+      {/* Balanced Summary Section with Upcoming Projections */}
       <section className="dashboard-grid-2-1">
         
-        {/* Recruitment & Hiring Efficiency */}
+        {/* Recruitment & Upcoming Projections */}
         <div className="card pastel-card-1" style={{ padding: '1.25rem' }}>
-          <div className="card-title" style={{ color: '#2e1065', marginBottom: '0.85rem' }}>Hiring Efficiency Metrics</div>
+          <div className="card-title" style={{ color: '#2e1065', marginBottom: '0.85rem' }}>Hiring Efficiency & Upcoming Targets</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', textAlign: 'center' }}>
             <div style={{ padding: '0.75rem', backgroundColor: 'rgba(255, 255, 255, 0.7)', borderRadius: '10px' }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6b21a8' }}>Time-to-Hire</div>
               <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#3b0764', marginTop: '0.2rem' }}>22 Days</div>
             </div>
             <div style={{ padding: '0.75rem', backgroundColor: 'rgba(255, 255, 255, 0.7)', borderRadius: '10px' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#9d174d' }}>Cost-per-Hire</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#831843', marginTop: '0.2rem' }}>₹42,000</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#9d174d' }}>Dec 2026 Target</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#831843', marginTop: '0.2rem' }}>365 Staff</div>
             </div>
             <div style={{ padding: '0.75rem', backgroundColor: 'rgba(255, 255, 255, 0.7)', borderRadius: '10px' }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#86198f' }}>Acceptance Rate</div>
@@ -231,13 +315,13 @@ const Analytics = () => {
           </div>
         </div>
 
-        {/* Key HR Observations */}
+        {/* Upcoming Months Predictive Insights */}
         <div className="card pastel-card-2" style={{ padding: '1.25rem' }}>
-          <div className="card-title" style={{ color: '#831843', marginBottom: '0.85rem' }}>Key Workforce Insights</div>
+          <div className="card-title" style={{ color: '#831843', marginBottom: '0.85rem' }}>Upcoming Months Projection (Oct - Dec)</div>
           <ul style={{ margin: 0, paddingLeft: '1.1rem', fontSize: '0.825rem', color: '#9d174d', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontWeight: 600 }}>
-            <li>Retention increased by 14% following recent quarterly reviews.</li>
-            <li>Engineering & HR departments achieved peak performance index scores.</li>
-            <li>Turnover risk remains low with 94% overall survey response rate.</li>
+            <li>Headcount projected to reach 365 employees by year-end (+23 hires).</li>
+            <li>Attrition rate forecasted to drop further to 2.4% in Q4.</li>
+            <li>Q4 recruitment focus: Engineering & Cloud Infrastructure talent.</li>
           </ul>
         </div>
 
