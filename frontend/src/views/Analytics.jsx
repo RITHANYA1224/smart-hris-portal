@@ -11,36 +11,58 @@ const Analytics = () => {
     { name: 'Fin 20%', color: 'var(--warning-color)' },
   ];
 
-  // 12 Months Dataset for 2026 (Jan - Sep Actual, Oct - Dec Upcoming Projections)
-  const growthPoints = [
-    { month: 'Jan', val: '275', x: 25, y: 140, isForecast: false },
-    { month: 'Feb', val: '284', x: 66, y: 125, isForecast: false },
-    { month: 'Mar', val: '295', x: 107, y: 110, isForecast: false },
-    { month: 'Apr', val: '304', x: 148, y: 98, isForecast: false },
-    { month: 'May', val: '315', x: 189, y: 85, isForecast: false },
-    { month: 'Jun', val: '320', x: 230, y: 78, isForecast: false },
-    { month: 'Jul', val: '328', x: 271, y: 70, isForecast: false },
-    { month: 'Aug', val: '335', x: 312, y: 62, isForecast: false },
-    { month: 'Sep', val: '342', x: 353, y: 54, isForecast: false },
-    { month: 'Oct', val: '350', x: 394, y: 45, isForecast: true },
-    { month: 'Nov', val: '358', x: 435, y: 36, isForecast: true },
-    { month: 'Dec', val: '365', x: 476, y: 28, isForecast: true },
+  // Full 12 Months Master Dataset
+  const fullGrowthData = [
+    { month: 'Jan', val: 275, valStr: '275', y: 140, isForecast: false },
+    { month: 'Feb', val: 284, valStr: '284', y: 125, isForecast: false },
+    { month: 'Mar', val: 295, valStr: '295', y: 110, isForecast: false },
+    { month: 'Apr', val: 304, valStr: '304', y: 98, isForecast: false },
+    { month: 'May', val: 315, valStr: '315', y: 85, isForecast: false },
+    { month: 'Jun', val: 320, valStr: '320', y: 78, isForecast: false },
+    { month: 'Jul', val: 328, valStr: '328', y: 70, isForecast: false },
+    { month: 'Aug', val: 335, valStr: '335', y: 62, isForecast: false },
+    { month: 'Sep', val: 342, valStr: '342', y: 54, isForecast: false },
+    { month: 'Oct', val: 350, valStr: '350', y: 45, isForecast: true },
+    { month: 'Nov', val: 358, valStr: '358', y: 36, isForecast: true },
+    { month: 'Dec', val: 365, valStr: '365', y: 28, isForecast: true },
   ];
 
-  const attritionPoints = [
-    { month: 'Jan', val: '4.5%', x: 25, y: 40, isForecast: false },
-    { month: 'Feb', val: '4.1%', x: 66, y: 55, isForecast: false },
-    { month: 'Mar', val: '3.8%', x: 107, y: 70, isForecast: false },
-    { month: 'Apr', val: '3.4%', x: 148, y: 88, isForecast: false },
-    { month: 'May', val: '3.2%', x: 189, y: 96, isForecast: false },
-    { month: 'Jun', val: '3.1%', x: 230, y: 102, isForecast: false },
-    { month: 'Jul', val: '2.9%', x: 271, y: 110, isForecast: false },
-    { month: 'Aug', val: '2.8%', x: 312, y: 116, isForecast: false },
-    { month: 'Sep', val: '2.7%', x: 353, y: 120, isForecast: false },
-    { month: 'Oct', val: '2.6%', x: 394, y: 125, isForecast: true },
-    { month: 'Nov', val: '2.5%', x: 435, y: 130, isForecast: true },
-    { month: 'Dec', val: '2.4%', x: 476, y: 135, isForecast: true },
+  const fullAttritionData = [
+    { month: 'Jan', valStr: '4.5%', y: 40, isForecast: false },
+    { month: 'Feb', valStr: '4.1%', y: 55, isForecast: false },
+    { month: 'Mar', valStr: '3.8%', y: 70, isForecast: false },
+    { month: 'Apr', valStr: '3.4%', y: 88, isForecast: false },
+    { month: 'May', valStr: '3.2%', y: 96, isForecast: false },
+    { month: 'Jun', valStr: '3.1%', y: 102, isForecast: false },
+    { month: 'Jul', valStr: '2.9%', y: 110, isForecast: false },
+    { month: 'Aug', valStr: '2.8%', y: 116, isForecast: false },
+    { month: 'Sep', valStr: '2.7%', y: 120, isForecast: false },
+    { month: 'Oct', valStr: '2.6%', y: 125, isForecast: true },
+    { month: 'Nov', valStr: '2.5%', y: 130, isForecast: true },
+    { month: 'Dec', valStr: '2.4%', y: 135, isForecast: true },
   ];
+
+  // Filter dataset based on selected range
+  const getFilteredPoints = (data) => {
+    if (selectedRange === 'H1 Historical') {
+      return data.slice(0, 6);
+    }
+    if (selectedRange === 'H2 Forecast (Jul-Dec)') {
+      return data.slice(6, 12);
+    }
+    return data; // Full Year 2026
+  };
+
+  const currentGrowth = getFilteredPoints(fullGrowthData);
+  const currentAttrition = getFilteredPoints(fullAttritionData);
+
+  // Compute X positions dynamically based on filtered length
+  const computeX = (index, total) => {
+    const startX = 35;
+    const endX = 465;
+    if (total <= 1) return (startX + endX) / 2;
+    return startX + index * ((endX - startX) / (total - 1));
+  };
 
   return (
     <div className="dashboard-content">
@@ -56,7 +78,7 @@ const Analytics = () => {
           </div>
         </div>
 
-        {/* Range Selector Pills */}
+        {/* Range Selector Options */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'rgba(255, 255, 255, 0.8)', padding: '0.35rem', borderRadius: '12px', border: '1px solid rgba(147, 51, 234, 0.2)' }}>
           {['Full Year 2026', 'H2 Forecast (Jul-Dec)', 'H1 Historical'].map((range) => (
             <button
@@ -128,10 +150,10 @@ const Analytics = () => {
       {/* Line Charts Grid Row */}
       <section className="dashboard-grid-2-1">
         
-        {/* Employee Growth Chart (Jan - Dec Full Year with Forecast) */}
+        {/* Employee Growth Chart */}
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <div className="card-title" style={{ margin: 0 }}>Employee Growth (Jan - Dec 2026)</div>
+            <div className="card-title" style={{ margin: 0 }}>Employee Growth ({selectedRange})</div>
             <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.7rem', fontWeight: 700 }}>
               <span style={{ color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--primary-color)' }}></span> Actuals (Jan-Sep)
@@ -151,39 +173,50 @@ const Analytics = () => {
                 </linearGradient>
               </defs>
               
-              <line x1="25" y1="30" x2="476" y2="30" stroke="var(--border-color)" strokeDasharray="3,3" />
-              <line x1="25" y1="85" x2="476" y2="85" stroke="var(--border-color)" strokeDasharray="3,3" />
-              <line x1="25" y1="140" x2="476" y2="140" stroke="var(--border-color)" strokeDasharray="3,3" />
+              <line x1="30" y1="30" x2="470" y2="30" stroke="var(--border-color)" strokeDasharray="3,3" />
+              <line x1="30" y1="85" x2="470" y2="85" stroke="var(--border-color)" strokeDasharray="3,3" />
+              <line x1="30" y1="140" x2="470" y2="140" stroke="var(--border-color)" strokeDasharray="3,3" />
 
-              {/* Shaded Forecast Zone Background */}
-              <rect x="373" y="15" width="112" height="135" fill="rgba(168, 85, 247, 0.05)" rx="6" />
-              <text x="429" y="24" fill="#9333ea" fontSize="8" fontWeight="bold" textAnchor="middle">UPCOMING PROJECTION</text>
-              
-              {/* Path area */}
-              <path d="M 25 140 L 66 125 L 107 110 L 148 98 L 189 85 L 230 78 L 271 70 L 312 62 L 353 54 L 394 45 L 435 36 L 476 28 L 476 150 L 25 150 Z" fill="url(#chartGrad1)" />
-              
-              {/* Actual Line (Jan - Sep) */}
-              <path d="M 25 140 L 66 125 L 107 110 L 148 98 L 189 85 L 230 78 L 271 70 L 312 62 L 353 54" fill="none" stroke="var(--primary-color)" strokeWidth="3" strokeLinecap="round" />
-              
-              {/* Forecast Line (Sep - Dec Dashed) */}
-              <path d="M 353 54 L 394 45 L 435 36 L 476 28" fill="none" stroke="#a855f7" strokeWidth="3" strokeDasharray="4,4" strokeLinecap="round" />
-              
-              {/* Nodes */}
-              {growthPoints.map((pt, i) => (
-                <g key={i}>
-                  <circle cx={pt.x} cy={pt.y} r="3.5" fill={pt.isForecast ? '#f3e8ff' : 'var(--primary-color)'} stroke="var(--primary-color)" strokeWidth="2" />
-                  <text x={pt.x} y={pt.y - 8} fill={pt.isForecast ? '#7e22ce' : 'var(--text-secondary)'} fontSize="8" fontWeight="bold" textAnchor="middle">{pt.val}</text>
-                  <text x={pt.x} y="165" fill={pt.isForecast ? '#9333ea' : 'var(--text-muted)'} fontSize="9" fontWeight={pt.isForecast ? 'bold' : 'normal'} textAnchor="middle">{pt.month}</text>
-                </g>
-              ))}
+              {/* Shaded Area Under Path */}
+              {currentGrowth.length > 0 && (
+                <path
+                  d={`M ${computeX(0, currentGrowth.length)} 140 ` +
+                    currentGrowth.map((pt, idx) => `L ${computeX(idx, currentGrowth.length)} ${pt.y}`).join(' ') +
+                    ` L ${computeX(currentGrowth.length - 1, currentGrowth.length)} 150 L ${computeX(0, currentGrowth.length)} 150 Z`}
+                  fill="url(#chartGrad1)"
+                />
+              )}
+
+              {/* Line Curve */}
+              {currentGrowth.length > 0 && (
+                <path
+                  d={currentGrowth.map((pt, idx) => `${idx === 0 ? 'M' : 'L'} ${computeX(idx, currentGrowth.length)} ${pt.y}`).join(' ')}
+                  fill="none"
+                  stroke="var(--primary-color)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+              )}
+
+              {/* Data Nodes & Month Labels */}
+              {currentGrowth.map((pt, i) => {
+                const posX = computeX(i, currentGrowth.length);
+                return (
+                  <g key={i}>
+                    <circle cx={posX} cy={pt.y} r="3.5" fill={pt.isForecast ? '#f3e8ff' : 'var(--primary-color)'} stroke="var(--primary-color)" strokeWidth="2" />
+                    <text x={posX} y={pt.y - 8} fill={pt.isForecast ? '#7e22ce' : 'var(--text-secondary)'} fontSize="8" fontWeight="bold" textAnchor="middle">{pt.valStr}</text>
+                    <text x={posX} y="165" fill={pt.isForecast ? '#9333ea' : 'var(--text-muted)'} fontSize="9" fontWeight={pt.isForecast ? 'bold' : 'normal'} textAnchor="middle">{pt.month}</text>
+                  </g>
+                );
+              })}
             </svg>
           </div>
         </div>
 
-        {/* Attrition Trend (%) Chart (Jan - Dec Full Year with Forecast) */}
+        {/* Attrition Trend (%) Chart */}
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <div className="card-title" style={{ margin: 0 }}>Attrition Trend (%) & Projection</div>
+            <div className="card-title" style={{ margin: 0 }}>Attrition Trend ({selectedRange})</div>
             <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--danger-color)' }}>
               Target Ceiling: &lt; 5.0%
             </span>
@@ -198,33 +231,45 @@ const Analytics = () => {
                 </linearGradient>
               </defs>
 
-              <line x1="25" y1="30" x2="476" y2="30" stroke="var(--border-color)" strokeDasharray="3,3" />
-              <line x1="25" y1="85" x2="476" y2="85" stroke="var(--border-color)" strokeDasharray="3,3" />
-              <line x1="25" y1="140" x2="476" y2="140" stroke="var(--border-color)" strokeDasharray="3,3" />
+              <line x1="30" y1="30" x2="470" y2="30" stroke="var(--border-color)" strokeDasharray="3,3" />
+              <line x1="30" y1="85" x2="470" y2="85" stroke="var(--border-color)" strokeDasharray="3,3" />
+              <line x1="30" y1="140" x2="470" y2="140" stroke="var(--border-color)" strokeDasharray="3,3" />
               
-              {/* Shaded Forecast Zone */}
-              <rect x="373" y="15" width="112" height="135" fill="rgba(236, 72, 153, 0.05)" rx="6" />
-              <text x="429" y="24" fill="#be185d" fontSize="8" fontWeight="bold" textAnchor="middle">UPCOMING PROJECTION</text>
-
               {/* Target 5% Line */}
-              <line x1="25" y1="35" x2="476" y2="35" stroke="#f43f5e" strokeDasharray="2,2" strokeWidth="1" />
+              <line x1="30" y1="35" x2="470" y2="35" stroke="#f43f5e" strokeDasharray="2,2" strokeWidth="1" />
 
-              <path d="M 25 40 L 66 55 L 107 70 L 148 88 L 189 96 L 230 102 L 271 110 L 312 116 L 353 120 L 394 125 L 435 130 L 476 135 L 476 150 L 25 150 Z" fill="url(#chartGrad2)" />
-              
-              {/* Actual Line (Jan - Sep) */}
-              <path d="M 25 40 L 66 55 L 107 70 L 148 88 L 189 96 L 230 102 L 271 110 L 312 116 L 353 120" fill="none" stroke="var(--danger-color)" strokeWidth="3" strokeLinecap="round" />
+              {/* Shaded Area Under Path */}
+              {currentAttrition.length > 0 && (
+                <path
+                  d={`M ${computeX(0, currentAttrition.length)} 140 ` +
+                    currentAttrition.map((pt, idx) => `L ${computeX(idx, currentAttrition.length)} ${pt.y}`).join(' ') +
+                    ` L ${computeX(currentAttrition.length - 1, currentAttrition.length)} 150 L ${computeX(0, currentAttrition.length)} 150 Z`}
+                  fill="url(#chartGrad2)"
+                />
+              )}
 
-              {/* Forecast Line (Sep - Dec Dashed) */}
-              <path d="M 353 120 L 394 125 L 435 130 L 476 135" fill="none" stroke="#be185d" strokeWidth="3" strokeDasharray="4,4" strokeLinecap="round" />
+              {/* Line Curve */}
+              {currentAttrition.length > 0 && (
+                <path
+                  d={currentAttrition.map((pt, idx) => `${idx === 0 ? 'M' : 'L'} ${computeX(idx, currentAttrition.length)} ${pt.y}`).join(' ')}
+                  fill="none"
+                  stroke="var(--danger-color)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+              )}
 
-              {/* Nodes */}
-              {attritionPoints.map((pt, i) => (
-                <g key={i}>
-                  <circle cx={pt.x} cy={pt.y} r="3.5" fill={pt.isForecast ? '#fce7f3' : 'var(--danger-color)'} stroke="var(--danger-color)" strokeWidth="2" />
-                  <text x={pt.x} y={pt.y - 8} fill={pt.isForecast ? '#9d174d' : 'var(--text-secondary)'} fontSize="8" fontWeight="bold" textAnchor="middle">{pt.val}</text>
-                  <text x={pt.x} y="165" fill={pt.isForecast ? '#be185d' : 'var(--text-muted)'} fontSize="9" fontWeight={pt.isForecast ? 'bold' : 'normal'} textAnchor="middle">{pt.month}</text>
-                </g>
-              ))}
+              {/* Nodes & Labels */}
+              {currentAttrition.map((pt, i) => {
+                const posX = computeX(i, currentAttrition.length);
+                return (
+                  <g key={i}>
+                    <circle cx={posX} cy={pt.y} r="3.5" fill={pt.isForecast ? '#fce7f3' : 'var(--danger-color)'} stroke="var(--danger-color)" strokeWidth="2" />
+                    <text x={posX} y={pt.y - 8} fill={pt.isForecast ? '#9d174d' : 'var(--text-secondary)'} fontSize="8" fontWeight="bold" textAnchor="middle">{pt.valStr}</text>
+                    <text x={posX} y="165" fill={pt.isForecast ? '#be185d' : 'var(--text-muted)'} fontSize="9" fontWeight={pt.isForecast ? 'bold' : 'normal'} textAnchor="middle">{pt.month}</text>
+                  </g>
+                );
+              })}
             </svg>
           </div>
         </div>
