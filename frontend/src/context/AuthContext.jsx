@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    // Verify token validity with backend profile endpoint
+    // Verify token validity with backend profile endpoint if reachable
     fetch('/api/users/profile', {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -41,37 +41,52 @@ export const AuthProvider = ({ children }) => {
         if (res.ok) {
           return res.json();
         }
-        throw new Error('Invalid session');
+        if (res.status === 401) {
+          throw new Error('Unauthorized');
+        }
+        return null;
       })
       .then((userData) => {
         setAuthState({
           token,
-          role: userData.role || role,
-          name: userData.name || name,
-          email: userData.email || email,
+          role: userData?.role || role || 'EMPLOYEE',
+          name: userData?.name || name || 'User',
+          email: userData?.email || email || '',
           isAuthenticated: true,
           loading: false
         });
       })
-      .catch(() => {
-        // Clear invalid token session
-        localStorage.removeItem('jwtToken');
-        localStorage.removeItem('token');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('role');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('name');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('email');
+      .catch((err) => {
+        if (err.message === 'Unauthorized') {
+          // Clear invalid token session
+          localStorage.removeItem('jwtToken');
+          localStorage.removeItem('token');
+          localStorage.removeItem('userRole');
+          localStorage.removeItem('role');
+          localStorage.removeItem('userName');
+          localStorage.removeItem('name');
+          localStorage.removeItem('userEmail');
+          localStorage.removeItem('email');
 
-        setAuthState({
-          token: null,
-          role: null,
-          name: null,
-          email: null,
-          isAuthenticated: false,
-          loading: false
-        });
+          setAuthState({
+            token: null,
+            role: null,
+            name: null,
+            email: null,
+            isAuthenticated: false,
+            loading: false
+          });
+        } else {
+          // Backend offline or network blip: preserve offline session
+          setAuthState({
+            token,
+            role: role || 'EMPLOYEE',
+            name: name || 'User',
+            email: email || '',
+            isAuthenticated: true,
+            loading: false
+          });
+        }
       });
   }, []);
 

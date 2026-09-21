@@ -38,3 +38,5 @@ walkthrough.md
 task.md
 implementation_plan.md
 scratch/
+# Local database data
+database/data/

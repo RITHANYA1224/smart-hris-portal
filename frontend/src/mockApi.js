@@ -5,7 +5,10 @@ const SEED_USERS = [
   { id: 2, name: 'HR BP User', phoneNumber: '9876543211', email: 'hrbp@hris.com', passwordHash: 'Password123!', role: 'HR BP', createdDate: new Date().toISOString(), isActive: true },
   { id: 3, name: 'Manager User', phoneNumber: '9876543212', email: 'manager@hris.com', passwordHash: 'Password123!', role: 'Manager', createdDate: new Date().toISOString(), isActive: true },
   { id: 4, name: 'Employee User', phoneNumber: '9876543213', email: 'employee@hris.com', passwordHash: 'Password123!', role: 'Employee', createdDate: new Date().toISOString(), isActive: true },
-  { id: 5, name: 'Finance User', phoneNumber: '9876543214', email: 'finance@hris.com', passwordHash: 'Password123!', role: 'Finance Officer', createdDate: new Date().toISOString(), isActive: true }
+  { id: 5, name: 'Finance User', phoneNumber: '9876543214', email: 'finance@hris.com', passwordHash: 'Password123!', role: 'Finance Officer', createdDate: new Date().toISOString(), isActive: true },
+  { id: 6, name: 'Priya Sharma', phoneNumber: '9876543215', email: 'priya@hris.com', passwordHash: 'Password123!', role: 'Employee', createdDate: new Date().toISOString(), isActive: true },
+  { id: 7, name: 'Rahul Verma', phoneNumber: '9876543216', email: 'rahul@hris.com', passwordHash: 'Password123!', role: 'Manager', createdDate: new Date().toISOString(), isActive: true },
+  { id: 8, name: 'Nisha Patel', phoneNumber: '9876543217', email: 'nisha@hris.com', passwordHash: 'Password123!', role: 'Employee', createdDate: new Date().toISOString(), isActive: true }
 ];
 
 const SEED_EMPLOYEES = [
@@ -13,17 +16,28 @@ const SEED_EMPLOYEES = [
   { id: 2, employeeId: 'EMP002', name: 'HR BP User', phoneNumber: '9876543211', email: 'hrbp@hris.com', departmentId: 2, managerId: 1, designation: 'HR Business Partner', dateOfJoining: '2024-02-10', employmentType: 'FULL_TIME', status: 'ACTIVE' },
   { id: 3, employeeId: 'EMP003', name: 'Manager User', phoneNumber: '9876543212', email: 'manager@hris.com', departmentId: 1, managerId: 1, designation: 'Engineering Manager', dateOfJoining: '2024-03-01', employmentType: 'FULL_TIME', status: 'ACTIVE' },
   { id: 4, employeeId: 'EMP004', name: 'Employee User', phoneNumber: '9876543213', email: 'employee@hris.com', departmentId: 1, managerId: 3, designation: 'Software Engineer', dateOfJoining: '2024-05-20', employmentType: 'FULL_TIME', status: 'ACTIVE' },
-  { id: 5, employeeId: 'EMP005', name: 'Finance User', phoneNumber: '9876543214', email: 'finance@hris.com', departmentId: 3, managerId: 1, designation: 'Finance Controller', dateOfJoining: '2024-04-12', employmentType: 'FULL_TIME', status: 'ACTIVE' }
+  { id: 5, employeeId: 'EMP005', name: 'Finance User', phoneNumber: '9876543214', email: 'finance@hris.com', departmentId: 3, managerId: 1, designation: 'Finance Controller', dateOfJoining: '2024-04-12', employmentType: 'FULL_TIME', status: 'ACTIVE' },
+  { id: 6, employeeId: 'EMP006', name: 'Priya Sharma', phoneNumber: '9876543215', email: 'priya@hris.com', departmentId: 1, managerId: 3, designation: 'Frontend Developer', dateOfJoining: '2024-06-18', employmentType: 'FULL_TIME', status: 'ACTIVE' },
+  { id: 7, employeeId: 'EMP007', name: 'Rahul Verma', phoneNumber: '9876543216', email: 'rahul@hris.com', departmentId: 4, managerId: 1, designation: 'Operations Manager', dateOfJoining: '2023-11-07', employmentType: 'FULL_TIME', status: 'ACTIVE' },
+  { id: 8, employeeId: 'EMP008', name: 'Nisha Patel', phoneNumber: '9876543217', email: 'nisha@hris.com', departmentId: 3, managerId: 5, designation: 'Payroll Analyst', dateOfJoining: '2024-09-12', employmentType: 'FULL_TIME', status: 'ACTIVE' },
+  { id: 9, employeeId: 'EMP009', name: 'Arjun Iyer', phoneNumber: '9876543218', email: 'arjun@hris.com', departmentId: 1, managerId: 3, designation: 'Backend Developer', dateOfJoining: '2025-01-10', employmentType: 'FULL_TIME', status: 'ACTIVE' },
+  { id: 10, employeeId: 'EMP010', name: 'Meera Nair', phoneNumber: '9876543219', email: 'meera@hris.com', departmentId: 2, managerId: 2, designation: 'Recruitment Specialist', dateOfJoining: '2024-08-05', employmentType: 'CONTRACT', status: 'PROBATION' }
 ];
 
 const SEED_LEAVES = [
   { id: 1, employeeId: 4, leaveType: 'CASUAL', fromDate: '2026-07-20', toDate: '2026-07-21', reason: 'Family event', status: 'PENDING', approvedBy: null },
-  { id: 2, employeeId: 4, leaveType: 'SICK', fromDate: '2026-06-10', toDate: '2026-06-11', reason: 'Fever', status: 'APPROVED', approvedBy: 3 }
+  { id: 2, employeeId: 6, leaveType: 'SICK', fromDate: '2026-06-10', toDate: '2026-06-11', reason: 'Fever', status: 'APPROVED', approvedBy: 3 },
+  { id: 3, employeeId: 8, leaveType: 'ANNUAL', fromDate: '2026-08-03', toDate: '2026-08-06', reason: 'Travel and rest', status: 'PENDING', approvedBy: null },
+  { id: 4, employeeId: 9, leaveType: 'CASUAL', fromDate: '2026-07-25', toDate: '2026-07-25', reason: 'Wedding function', status: 'PENDING', approvedBy: null },
+  { id: 5, employeeId: 10, leaveType: 'SICK', fromDate: '2026-06-18', toDate: '2026-06-19', reason: 'Health issue', status: 'APPROVED', approvedBy: 2 }
 ];
 
 const SEED_PAYROLL = [
   { id: 1, employeeId: 4, payPeriod: '2026-06-30', gross: 80000.00, pfEmployee: 9600.00, esiEmployee: 600.00, tds: 8000.00, netPay: 61800.00, status: 'DISBURSED' },
-  { id: 2, employeeId: 3, payPeriod: '2026-06-30', gross: 120000.00, pfEmployee: 14400.00, esiEmployee: 900.00, tds: 15000.00, netPay: 89700.00, status: 'DISBURSED' }
+  { id: 2, employeeId: 3, payPeriod: '2026-06-30', gross: 120000.00, pfEmployee: 14400.00, esiEmployee: 900.00, tds: 15000.00, netPay: 89700.00, status: 'DISBURSED' },
+  { id: 3, employeeId: 6, payPeriod: '2026-06-30', gross: 76000.00, pfEmployee: 9120.00, esiEmployee: 570.00, tds: 6500.00, netPay: 59810.00, status: 'DISBURSED' },
+  { id: 4, employeeId: 8, payPeriod: '2026-06-30', gross: 68000.00, pfEmployee: 8160.00, esiEmployee: 510.00, tds: 5400.00, netPay: 52930.00, status: 'PENDING' },
+  { id: 5, employeeId: 7, payPeriod: '2026-06-30', gross: 98000.00, pfEmployee: 11760.00, esiEmployee: 730.00, tds: 8800.00, netPay: 76710.00, status: 'DISBURSED' }
 ];
 
 const SEED_APPRAISALS = [
